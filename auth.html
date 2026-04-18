@@ -83,16 +83,20 @@
       <div class="auth-form" id="formVerify">
         <div style="text-align:center;margin-bottom:2rem">
           <h3 style="font-size:1.3rem;margin-bottom:0.5rem;color:var(--accent)">Verifikasi Email</h3>
-          <p style="font-size:0.9rem;color:var(--cream-dim)">Kami sudah kirim link verifikasi ke email kamu. Cek inbox atau folder spam.</p>
+          <p style="font-size:0.9rem;color:var(--cream-dim)">Kami sudah kirim kode verifikasi ke email kamu. Salin kode 6 digit dari email.</p>
         </div>
         <div id="verifyInfo" style="background:rgba(255,255,255,0.05);padding:1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.9rem;color:var(--cream-dim)">
           Email: <strong id="verifyEmailDisplay"></strong>
         </div>
-        <button type="button" class="btn btn--primary" id="checkVerifyBtn" style="width:100%;justify-content:center;margin-top:0.5rem;margin-bottom:0.5rem">
-          Sudah Verifikasi? Lanjut
+        <div class="form-group">
+          <label for="verifyCode">Kode Verifikasi (6 digit)</label>
+          <input type="text" id="verifyCode" class="form-input" placeholder="Contoh: 123456" maxlength="6" inputmode="numeric">
+        </div>
+        <button type="button" class="btn btn--primary" id="verifyCodeBtn" style="width:100%;justify-content:center;margin-top:0.5rem;margin-bottom:0.5rem">
+          Verifikasi
         </button>
         <button type="button" class="btn btn--outline" id="resendVerifyBtn" style="width:100%;justify-content:center">
-          Kirim Ulang Email
+          Kirim Ulang Kode
         </button>
         <p style="text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--cream-dim)">
           <button type="button" onclick="switchTab('login')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Kembali ke Login</button>
@@ -140,13 +144,7 @@ window.handleLogin = async () => {
 
   try {
     const user = await loginUser(email, pass);
-    if (user.emailVerified) {
-      window.location.href = 'profile.html';
-    } else {
-      // Show verification screen
-      document.getElementById('verifyEmailDisplay').textContent = user.email;
-      switchTab('verify');
-    }
+    window.location.href = 'profile.html';
   } catch (e) {
     showError(errEl, translateError(e.code));
     btn.disabled = false;
@@ -171,13 +169,9 @@ window.handleRegister = async () => {
 
   try {
     const user = await registerUser(name, email, pass);
-    sucEl.textContent = 'Akun berhasil dibuat! Silakan verifikasi email kamu.';
+    sucEl.textContent = 'Akun berhasil dibuat! Mengalihkan...';
     sucEl.style.display = 'block';
-    // Show verification screen after 1.5s
-    setTimeout(() => {
-      document.getElementById('verifyEmailDisplay').textContent = user.email;
-      switchTab('verify');
-    }, 1500);
+    setTimeout(() => window.location.href = 'profile.html', 1500);
   } catch (e) {
     showError(errEl, translateError(e.code));
     btn.disabled = false;
@@ -187,17 +181,21 @@ window.handleRegister = async () => {
 
 window.handleCheckVerify = async () => {
   const btn = document.getElementById('checkVerifyBtn');
+  const statusEl = document.getElementById('autoCheckStatus');
   btn.disabled = true;
   btn.textContent = 'Memeriksa...';
+  statusEl.style.display = 'none';
 
   try {
     const verified = await refreshEmailStatus();
     if (verified) {
       btn.textContent = 'Email Terverifikasi! Mengalihkan...';
+      stopAutoCheckVerification();
       setTimeout(() => window.location.href = 'profile.html', 1500);
     } else {
       btn.textContent = 'Belum Terverifikasi';
       btn.disabled = false;
+      statusEl.style.display = 'block';
       setTimeout(() => {
         btn.textContent = 'Sudah Verifikasi? Lanjut';
       }, 2000);
@@ -205,7 +203,41 @@ window.handleCheckVerify = async () => {
   } catch (e) {
     btn.textContent = 'Gagal Memeriksa';
     btn.disabled = false;
+    statusEl.style.display = 'none';
   }
+};
+
+let verifyCheckInterval = null;
+
+window.startAutoCheckVerification = () => {
+  stopAutoCheckVerification(); // Clear existing interval
+  const statusEl = document.getElementById('autoCheckStatus');
+  statusEl.style.display = 'block';
+  
+  // Auto-check every 5 seconds
+  verifyCheckInterval = setInterval(async () => {
+    try {
+      const verified = await refreshEmailStatus();
+      if (verified) {
+        const btn = document.getElementById('checkVerifyBtn');
+        btn.textContent = 'Email Terverifikasi! Mengalihkan...';
+        btn.disabled = true;
+        stopAutoCheckVerification();
+        setTimeout(() => window.location.href = 'profile.html', 1500);
+      }
+    } catch (e) {
+      console.error('Auto-check verification failed:', e);
+    }
+  }, 5000);
+};
+
+window.stopAutoCheckVerification = () => {
+  if (verifyCheckInterval) {
+    clearInterval(verifyCheckInterval);
+    verifyCheckInterval = null;
+  }
+  const statusEl = document.getElementById('autoCheckStatus');
+  statusEl.style.display = 'none';
 };
 
 window.handleResendVerify = async () => {
