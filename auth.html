@@ -45,12 +45,12 @@
           <label for="loginPassword">Password</label>
           <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
         </div>
-        <button class="btn btn--primary" id="loginBtn" onclick="handleLogin()" style="width:100%;justify-content:center;margin-top:0.5rem">
+        <button type="button" class="btn btn--primary" id="loginBtn" style="width:100%;justify-content:center;margin-top:0.5rem">
           Masuk
         </button>
         <p style="text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--cream-dim)">
           Belum punya akun?
-          <button onclick="switchTab('register')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Daftar</button>
+          <button type="button" onclick="switchTab('register')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Daftar</button>
         </p>
       </div>
 
@@ -70,12 +70,12 @@
           <label for="regPassword">Password</label>
           <input type="password" id="regPassword" class="form-input" placeholder="Min. 6 karakter" required>
         </div>
-        <button class="btn btn--primary" id="registerBtn" onclick="handleRegister()" style="width:100%;justify-content:center;margin-top:0.5rem">
+        <button type="button" class="btn btn--primary" id="registerBtn" style="width:100%;justify-content:center;margin-top:0.5rem">
           Buat Akun
         </button>
         <p style="text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--cream-dim)">
           Sudah punya akun?
-          <button onclick="switchTab('login')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Masuk</button>
+          <button type="button" onclick="switchTab('login')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Masuk</button>
         </p>
       </div>
     </div>
@@ -159,6 +159,9 @@ function showError(el, msg) {
   el.textContent = msg;
   el.style.display = 'block';
 }
+
+document.getElementById('loginBtn').addEventListener('click', handleLogin);
+document.getElementById('registerBtn').addEventListener('click', handleRegister);
 
 function translateError(code) {
   const map = {
