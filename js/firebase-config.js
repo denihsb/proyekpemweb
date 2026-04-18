@@ -3,12 +3,13 @@
 //  Firebase Console → Project Settings → Your Apps → Config
 // ============================================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBcVF7RREOWUmRdMB9OHe5JmmCS8LiuvBs",
+  authDomain: "artlocal-da76b.firebaseapp.com",
+  projectId: "artlocal-da76b",
+  storageBucket: "artlocal-da76b.firebasestorage.app",
+  messagingSenderId: "1060337702008",
+  appId: "1:1060337702008:web:622a51c94f3a378345898d",
+  measurementId: "G-4CCFS43JT0"
 };
 
 // Initialize Firebase
