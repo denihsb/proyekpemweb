@@ -3,7 +3,7 @@ import { collection, addDoc, doc, updateDoc, increment, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const CLOUD_NAME    = 'dwoyzgfxh';
-const UPLOAD_PRESET = 'ml_default';
+const UPLOAD_PRESET = 'storage';
 
 // ── Upload ke Cloudinary ──────────────────────────────────────
 function uploadToCloudinary(file, onProgress) {
@@ -23,10 +23,12 @@ function uploadToCloudinary(file, onProgress) {
     });
 
     xhr.onload = () => {
+      const response = JSON.parse(xhr.responseText || '{}');
       if (xhr.status === 200) {
-        resolve(JSON.parse(xhr.responseText).secure_url);
+        resolve(response.secure_url);
       } else {
-        reject(new Error('Upload ke Cloudinary gagal.'));
+        const message = response.error?.message || 'Upload ke Cloudinary gagal.';
+        reject(new Error(message));
       }
     };
 
