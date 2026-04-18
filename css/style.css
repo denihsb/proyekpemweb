@@ -36,10 +36,6 @@ html {
 }
 
 /* Cursor disembunyikan hanya setelah JS aktif */
-html.cursor-ready,
-html.cursor-ready * {
-  cursor: none !important;
-}
 
 body {
   background: var(--bg);
@@ -355,7 +351,7 @@ h3 { font-size: clamp(1.4rem, 2.5vw, 2rem); }
   margin-bottom: clamp(2rem, 4vw, 3rem);
   flex-wrap: wrap;
 }
-.section-header__title { }
+
 .section-header__num {
   font-family: var(--font-display);
   font-size: 0.75rem;

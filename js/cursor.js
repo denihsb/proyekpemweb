@@ -1,3 +1,54 @@
+// ── Custom Cursor ─────────────────────────────────────────────
+export function initCursor() {
+  // Skip di touch device
+  if (window.matchMedia('(pointer: coarse)').matches) return;
+
+  const cursor = document.createElement('div');
+  const cursorDot = document.createElement('div');
+  cursor.className = 'cursor';
+  cursorDot.className = 'cursor-dot';
+  document.body.appendChild(cursor);
+  document.body.appendChild(cursorDot);
+
+  let mx = 0, my = 0, cx = 0, cy = 0;
+  let ready = false;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX;
+    my = e.clientY;
+    cursorDot.style.transform = `translate(${mx}px, ${my}px)`;
+
+    // Sembunyiin cursor default hanya setelah mouse pertama kali gerak
+    if (!ready) {
+      ready = true;
+      document.documentElement.classList.add('cursor-ready');
+    }
+  });
+
+  function animateCursor() {
+    cx += (mx - cx) * 0.12;
+    cy += (my - cy) * 0.12;
+    cursor.style.transform = `translate(${cx}px, ${cy}px)`;
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+
+  // Hover states
+  const hoverEls = 'a, button, .art-card, [data-cursor="hover"], input, textarea, select';
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest(hoverEls)) {
+      cursor.classList.add('cursor--hover');
+    }
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(hoverEls)) {
+      cursor.classList.remove('cursor--hover');
+    }
+  });
+
+  document.addEventListener('mousedown', () => cursor.classList.add('cursor--click'));
+  document.addEventListener('mouseup', () => cursor.classList.remove('cursor--click'));
+}
 
 // ── Scroll Reveal ─────────────────────────────────────────────
 export function initScrollReveal() {
