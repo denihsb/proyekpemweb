@@ -5,33 +5,61 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let lastDoc = null;
+let allCached = []; // cache semua artwork buat client-side filter
 const PAGE_SIZE = 12;
 
-// ── Fetch Artworks (paginated) ────────────────────────────────
+// ── Fetch Artworks ────────────────────────────────────────────
+// Selalu fetch tanpa filter category di Firestore (hindari composite index),
+// lalu filter di client-side.
 export async function fetchArtworks(reset = false, category = null) {
-  if (reset) lastDoc = null;
+  if (reset) {
+    lastDoc = null;
+    allCached = [];
+  }
 
+  // Kalau ada cache dan kita hanya ganti filter (bukan load more),
+  // langsung filter dari cache
+  if (reset && allCached.length > 0 && category) {
+    return filterAndPage(allCached, category, true);
+  }
+
+  // Fetch dari Firestore — hanya pakai orderBy, tanpa where category
   let q = query(
     collection(db, 'artworks'),
     orderBy('createdAt', 'desc'),
-    limit(PAGE_SIZE)
+    limit(50) // ambil lebih banyak, filter di client
   );
 
-  if (category && category !== 'all') {
+  if (lastDoc) {
     q = query(
       collection(db, 'artworks'),
-      where('category', '==', category),
       orderBy('createdAt', 'desc'),
-      limit(PAGE_SIZE)
+      startAfter(lastDoc),
+      limit(50)
     );
   }
-
-  if (lastDoc) q = query(q, startAfter(lastDoc));
 
   const snap = await getDocs(q);
   if (!snap.empty) lastDoc = snap.docs[snap.docs.length - 1];
 
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const fetched = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  if (reset) {
+    allCached = fetched;
+  } else {
+    allCached = [...allCached, ...fetched];
+  }
+
+  return filterAndPage(allCached, category, reset);
+}
+
+// ── Filter + Paginate client-side ─────────────────────────────
+function filterAndPage(artworks, category, reset) {
+  let filtered = artworks;
+  if (category && category !== 'all') {
+    filtered = artworks.filter(a => a.category === category);
+  }
+  return filtered.slice(0, PAGE_SIZE);
 }
 
 // ── Fetch Single Artwork ──────────────────────────────────────
@@ -85,7 +113,7 @@ export function renderArtGrid(artworks, container, append = false) {
   if (artworks.length === 0 && !append) {
     container.innerHTML = `
       <div class="empty-state">
-        <p>Belum ada karya di sini.</p>
+        <p>Belum ada karya di kategori ini.</p>
         <a href="upload.html" class="btn btn--outline">Upload Pertama</a>
       </div>`;
     return;
