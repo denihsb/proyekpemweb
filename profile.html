@@ -136,28 +136,12 @@ window.saveBio = async () => {
   if (!currentUser) return;
   const bio = document.getElementById('editBio').value.trim();
   try {
-    await updateDoc(doc(db, 'users', currentUser.uid), { bio });
+    await setDoc(doc(db, 'users', currentUser.uid), { bio }, { merge: true });
     document.getElementById('profileBio').textContent = bio || 'Belum ada bio.';
     window.toggleEdit();
     showToast('Bio berhasil diperbarui!', 'success');
   } catch (e) {
-    if (e.code === 'not-found') {
-      // Create user doc if it doesn't exist
-      await setDoc(doc(db, 'users', currentUser.uid), {
-        uid: currentUser.uid,
-        username: currentUser.displayName || 'Anonim',
-        email: currentUser.email || '',
-        bio,
-        avatarUrl: '',
-        createdAt: serverTimestamp(),
-        artworkCount: 0
-      });
-      document.getElementById('profileBio').textContent = bio || 'Belum ada bio.';
-      window.toggleEdit();
-      showToast('Bio berhasil diperbarui!', 'success');
-    } else {
-      showToast('Gagal menyimpan bio.', 'error');
-    }
+    showToast('Gagal menyimpan bio.', 'error');
   }
 };
 

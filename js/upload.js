@@ -60,25 +60,9 @@ export async function uploadArtwork(file, metadata, onProgress) {
   });
 
   // 3. Tambah hitungan karya di profil user
-  try {
-    await updateDoc(doc(db, 'users', user.uid), {
-      artworkCount: increment(1)
-    });
-  } catch (e) {
-    if (e.code === 'not-found') {
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        username: user.displayName || 'Anonim',
-        email: user.email || '',
-        bio: '',
-        avatarUrl: '',
-        createdAt: serverTimestamp(),
-        artworkCount: 1
-      }, { merge: true });
-    } else {
-      throw e;
-    }
-  }
+  await setDoc(doc(db, 'users', user.uid), {
+    artworkCount: increment(1)
+  }, { merge: true });
 
   return { id: docRef.id, imageUrl };
 }
