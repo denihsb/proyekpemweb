@@ -1,5 +1,5 @@
 import { auth, db } from './firebase-config.js';
-import { collection, addDoc, doc, updateDoc, increment, serverTimestamp }
+import { collection, addDoc, doc, setDoc, updateDoc, increment, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const CLOUD_NAME    = 'dwoyzgfxh';
@@ -60,9 +60,25 @@ export async function uploadArtwork(file, metadata, onProgress) {
   });
 
   // 3. Tambah hitungan karya di profil user
-  await updateDoc(doc(db, 'users', user.uid), {
-    artworkCount: increment(1)
-  });
+  try {
+    await updateDoc(doc(db, 'users', user.uid), {
+      artworkCount: increment(1)
+    });
+  } catch (e) {
+    if (e.code === 'not-found') {
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        username: user.displayName || 'Anonim',
+        email: user.email || '',
+        bio: '',
+        avatarUrl: '',
+        createdAt: serverTimestamp(),
+        artworkCount: 1
+      }, { merge: true });
+    } else {
+      throw e;
+    }
+  }
 
   return { id: docRef.id, imageUrl };
 }
