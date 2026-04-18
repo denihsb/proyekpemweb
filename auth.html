@@ -78,6 +78,26 @@
           <button type="button" onclick="switchTab('login')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Masuk</button>
         </p>
       </div>
+
+      <!-- Verification Form -->
+      <div class="auth-form" id="formVerify">
+        <div style="text-align:center;margin-bottom:2rem">
+          <h3 style="font-size:1.3rem;margin-bottom:0.5rem;color:var(--accent)">Verifikasi Email</h3>
+          <p style="font-size:0.9rem;color:var(--cream-dim)">Kami sudah kirim link verifikasi ke email kamu. Cek inbox atau folder spam.</p>
+        </div>
+        <div id="verifyInfo" style="background:rgba(255,255,255,0.05);padding:1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.9rem;color:var(--cream-dim)">
+          Email: <strong id="verifyEmailDisplay"></strong>
+        </div>
+        <button type="button" class="btn btn--primary" id="checkVerifyBtn" style="width:100%;justify-content:center;margin-top:0.5rem;margin-bottom:0.5rem">
+          Sudah Verifikasi? Lanjut
+        </button>
+        <button type="button" class="btn btn--outline" id="resendVerifyBtn" style="width:100%;justify-content:center">
+          Kirim Ulang Email
+        </button>
+        <p style="text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--cream-dim)">
+          <button type="button" onclick="switchTab('login')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Kembali ke Login</button>
+        </p>
+      </div>
     </div>
   </div>
 
@@ -85,15 +105,15 @@
 
 <script type="module">
 import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
-import { loginUser, registerUser, watchAuth } from './js/auth.js';
+import { loginUser, registerUser, watchAuth, isEmailVerified, refreshEmailStatus, resendVerificationEmail } from './js/auth.js';
 
 initCursor();
 initGrain();
 initPageTransition();
 
-// Redirect if already logged in
+// Redirect if already logged in and verified
 watchAuth(user => {
-  if (user) window.location.href = 'profile.html';
+  if (user && user.emailVerified) window.location.href = 'profile.html';
 });
 
 window.switchTab = (tab) => {
@@ -119,8 +139,14 @@ window.handleLogin = async () => {
   errEl.style.display = 'none';
 
   try {
-    await loginUser(email, pass);
-    window.location.href = 'profile.html';
+    const user = await loginUser(email, pass);
+    if (user.emailVerified) {
+      window.location.href = 'profile.html';
+    } else {
+      // Show verification screen
+      document.getElementById('verifyEmailDisplay').textContent = user.email;
+      switchTab('verify');
+    }
   } catch (e) {
     showError(errEl, translateError(e.code));
     btn.disabled = false;
@@ -144,14 +170,59 @@ window.handleRegister = async () => {
   errEl.style.display = 'none';
 
   try {
-    await registerUser(name, email, pass);
-    sucEl.textContent = 'Akun berhasil dibuat! Mengalihkan...';
+    const user = await registerUser(name, email, pass);
+    sucEl.textContent = 'Akun berhasil dibuat! Silakan verifikasi email kamu.';
     sucEl.style.display = 'block';
-    setTimeout(() => window.location.href = 'profile.html', 1500);
+    // Show verification screen after 1.5s
+    setTimeout(() => {
+      document.getElementById('verifyEmailDisplay').textContent = user.email;
+      switchTab('verify');
+    }, 1500);
   } catch (e) {
     showError(errEl, translateError(e.code));
     btn.disabled = false;
     btn.textContent = 'Buat Akun';
+  }
+};
+
+window.handleCheckVerify = async () => {
+  const btn = document.getElementById('checkVerifyBtn');
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
+
+  try {
+    const verified = await refreshEmailStatus();
+    if (verified) {
+      btn.textContent = 'Email Terverifikasi! Mengalihkan...';
+      setTimeout(() => window.location.href = 'profile.html', 1500);
+    } else {
+      btn.textContent = 'Belum Terverifikasi';
+      btn.disabled = false;
+      setTimeout(() => {
+        btn.textContent = 'Sudah Verifikasi? Lanjut';
+      }, 2000);
+    }
+  } catch (e) {
+    btn.textContent = 'Gagal Memeriksa';
+    btn.disabled = false;
+  }
+};
+
+window.handleResendVerify = async () => {
+  const btn = document.getElementById('resendVerifyBtn');
+  btn.disabled = true;
+  btn.textContent = 'Mengirim...';
+
+  try {
+    await resendVerificationEmail();
+    btn.textContent = 'Email Sudah Dikirim!';
+    setTimeout(() => {
+      btn.textContent = 'Kirim Ulang Email';
+      btn.disabled = false;
+    }, 3000);
+  } catch (e) {
+    btn.textContent = 'Gagal Mengirim';
+    btn.disabled = false;
   }
 };
 
@@ -162,6 +233,8 @@ function showError(el, msg) {
 
 document.getElementById('loginBtn').addEventListener('click', handleLogin);
 document.getElementById('registerBtn').addEventListener('click', handleRegister);
+document.getElementById('checkVerifyBtn').addEventListener('click', handleCheckVerify);
+document.getElementById('resendVerifyBtn').addEventListener('click', handleResendVerify);
 
 function translateError(code) {
   const map = {

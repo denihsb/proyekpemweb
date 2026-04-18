@@ -61,6 +61,13 @@
     </div>
   </div>
 
+  <!-- Email Verification Warning -->
+  <div id="unverifiedBanner" style="display:none;background:#ffa500;color:white;padding:1rem;margin:1rem 0;border-radius:0.5rem;text-align:center">
+    <strong>⚠️ Email Belum Diverifikasi</strong>
+    <p style="font-size:0.9rem;margin:0.5rem 0">Verifikasi email untuk akses fitur lengkap</p>
+    <button onclick="resendVerificationEmailClick()" style="background:white;color:#ffa500;border:none;padding:0.5rem 1rem;border-radius:0.3rem;cursor:pointer;font-weight:bold">Kirim Email Verifikasi</button>
+  </div>
+
   <!-- Artworks -->
   <div class="container">
     <div class="section-header">
@@ -82,7 +89,7 @@
 
 <script type="module">
 import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
-import { watchAuth, logoutUser, getUserProfile, syncNavAuth, ensureUserProfile } from './js/auth.js';
+import { watchAuth, logoutUser, getUserProfile, syncNavAuth, ensureUserProfile, isEmailVerified, resendVerificationEmail } from './js/auth.js';
 import { fetchUserArtworks, renderArtGrid } from './js/gallery.js';
 import { doc, updateDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from './js/firebase-config.js';
@@ -106,6 +113,13 @@ watchAuth(async user => {
   document.getElementById('authGate').style.display = 'none';
   document.getElementById('profileContent').style.display = 'block';
   document.getElementById('logoutBtn').style.display = '';
+
+  // Show warning jika email belum diverifikasi
+  if (!user.emailVerified) {
+    document.getElementById('unverifiedBanner').style.display = 'block';
+  } else {
+    document.getElementById('unverifiedBanner').style.display = 'none';
+  }
 
   // Profile data
   const profile = await getUserProfile(user.uid);
@@ -152,6 +166,15 @@ function showToast(msg, type = 'success') {
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(() => el.remove(), 3000);
 }
+
+window.resendVerificationEmailClick = async () => {
+  try {
+    await resendVerificationEmail();
+    showToast('Email verifikasi sudah dikirim! Cek inbox kamu.', 'success');
+  } catch (e) {
+    showToast('Gagal mengirim email verifikasi.', 'error');
+  }
+};
 </script>
 </body>
 </html>

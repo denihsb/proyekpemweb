@@ -29,6 +29,14 @@
 
 <!-- ── Upload Content ──────────────────────────────────── -->
 <div class="upload-page" id="uploadContent" style="display:none">
+
+  <!-- Email Verification Warning -->
+  <div id="unverifiedBanner" style="display:none;background:#ffa500;color:white;padding:1rem;margin:1rem 0;border-radius:0.5rem;text-align:center">
+    <strong>⚠️ Email Belum Diverifikasi</strong>
+    <p style="font-size:0.9rem;margin:0.5rem 0">Verifikasi email untuk upload karya</p>
+    <button onclick="resendVerificationEmailClick()" style="background:white;color:#ffa500;border:none;padding:0.5rem 1rem;border-radius:0.3rem;cursor:pointer;font-weight:bold">Kirim Email Verifikasi</button>
+  </div>
+
   <div class="container">
     <div style="margin-bottom:2.5rem">
       <p class="label" style="margin-bottom:0.75rem">Studio Upload</p>
@@ -102,7 +110,7 @@
 
 <script type="module">
 import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
-import { watchAuth, syncNavAuth, ensureUserProfile } from './js/auth.js';
+import { watchAuth, syncNavAuth, ensureUserProfile, isEmailVerified, resendVerificationEmail } from './js/auth.js';
 import { uploadArtwork, validateImageFile } from './js/upload.js';
 
 initCursor();
@@ -120,8 +128,32 @@ watchAuth(async user => {
     await ensureUserProfile(user);
     document.getElementById('authGate').style.display = 'none';
     document.getElementById('uploadContent').style.display = 'block';
+
+    // Show warning & disable upload jika email belum verified
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (!user.emailVerified) {
+      document.getElementById('unverifiedBanner').style.display = 'block';
+      uploadBtn.disabled = true;
+      uploadBtn.style.opacity = '0.5';
+      uploadBtn.textContent = 'Verifikasi Email Dulu';
+    } else {
+      document.getElementById('unverifiedBanner').style.display = 'none';
+      uploadBtn.disabled = false;
+      uploadBtn.style.opacity = '1';
+      uploadBtn.textContent = 'Upload Karya';
+    }
   }
 });
+
+window.resendVerificationEmailClick = async () => {
+  try {
+    await resendVerificationEmail();
+    showError('Email verifikasi sudah dikirim! Cek inbox kamu.');
+  } catch (e) {
+    showError('Gagal mengirim email verifikasi.');
+  }
+};
+
 
 // Drop zone
 const dropZone = document.getElementById('dropZone');
@@ -156,6 +188,12 @@ function handleFile(file) {
 window.handleUpload = async () => {
   const errEl = document.getElementById('uploadError');
   errEl.style.display = 'none';
+
+  // Check email verification
+  if (!isEmailVerified()) {
+    showError('Verifikasi email dulu sebelum upload karya.');
+    return;
+  }
 
   if (!selectedFile) { showError('Pilih gambar dulu.'); return; }
   const title = document.getElementById('title').value.trim();
