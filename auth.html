@@ -83,17 +83,16 @@
       <div class="auth-form" id="formVerify">
         <div style="text-align:center;margin-bottom:2rem">
           <h3 style="font-size:1.3rem;margin-bottom:0.5rem;color:var(--accent)">Verifikasi Email</h3>
-          <p style="font-size:0.9rem;color:var(--cream-dim)">Kami sudah kirim kode verifikasi ke email kamu. Salin kode 6 digit dari email.</p>
+          <p style="font-size:0.9rem;color:var(--cream-dim)">Kami sudah kirim link verifikasi ke email kamu. Buka email dan klik link untuk verifikasi akun.</p>
         </div>
         <div id="verifyInfo" style="background:rgba(255,255,255,0.05);padding:1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.9rem;color:var(--cream-dim)">
           Email: <strong id="verifyEmailDisplay"></strong>
         </div>
-        <div class="form-group">
-          <label for="verifyCode">Kode Verifikasi (6 digit)</label>
-          <input type="text" id="verifyCode" class="form-input" placeholder="Contoh: 123456" maxlength="6" inputmode="numeric">
+        <div id="autoCheckStatus" style="background:rgba(100,255,100,0.1);padding:0.5rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.85rem;color:#64ff64;text-align:center;display:none">
+          ⏳ Sedang memeriksa verifikasi...
         </div>
         <button type="button" class="btn btn--primary" id="verifyCodeBtn" style="width:100%;justify-content:center;margin-top:0.5rem;margin-bottom:0.5rem">
-          Verifikasi
+          Sudah Verifikasi? Lanjut
         </button>
         <button type="button" class="btn btn--outline" id="resendVerifyBtn" style="width:100%;justify-content:center">
           Kirim Ulang Kode
@@ -169,9 +168,13 @@ window.handleRegister = async () => {
 
   try {
     const user = await registerUser(name, email, pass);
-    sucEl.textContent = 'Akun berhasil dibuat! Mengalihkan...';
+    sucEl.textContent = 'Akun berhasil dibuat! Kode verifikasi sudah dikirim ke email kamu.';
     sucEl.style.display = 'block';
-    setTimeout(() => window.location.href = 'profile.html', 1500);
+    setTimeout(() => {
+      document.getElementById('verifyEmailDisplay').textContent = email;
+      switchTab('verify');
+      startAutoCheckVerification();
+    }, 1500);
   } catch (e) {
     showError(errEl, translateError(e.code));
     btn.disabled = false;
@@ -180,11 +183,11 @@ window.handleRegister = async () => {
 };
 
 window.handleCheckVerify = async () => {
-  const btn = document.getElementById('checkVerifyBtn');
+  const btn = document.getElementById('verifyCodeBtn');
   const statusEl = document.getElementById('autoCheckStatus');
   btn.disabled = true;
   btn.textContent = 'Memeriksa...';
-  statusEl.style.display = 'none';
+  statusEl.style.display = 'block';
 
   try {
     const verified = await refreshEmailStatus();
@@ -196,9 +199,10 @@ window.handleCheckVerify = async () => {
       btn.textContent = 'Belum Terverifikasi';
       btn.disabled = false;
       statusEl.style.display = 'block';
+      statusEl.textContent = '⏳ Email anda belum terverifikasi. Periksa email anda atau tunggu sebentar.';
       setTimeout(() => {
         btn.textContent = 'Sudah Verifikasi? Lanjut';
-      }, 2000);
+      }, 3000);
     }
   } catch (e) {
     btn.textContent = 'Gagal Memeriksa';
@@ -212,14 +216,16 @@ let verifyCheckInterval = null;
 window.startAutoCheckVerification = () => {
   stopAutoCheckVerification(); // Clear existing interval
   const statusEl = document.getElementById('autoCheckStatus');
+  const btn = document.getElementById('verifyCodeBtn');
   statusEl.style.display = 'block';
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
   
   // Auto-check every 5 seconds
   verifyCheckInterval = setInterval(async () => {
     try {
       const verified = await refreshEmailStatus();
       if (verified) {
-        const btn = document.getElementById('checkVerifyBtn');
         btn.textContent = 'Email Terverifikasi! Mengalihkan...';
         btn.disabled = true;
         stopAutoCheckVerification();
@@ -265,7 +271,7 @@ function showError(el, msg) {
 
 document.getElementById('loginBtn').addEventListener('click', handleLogin);
 document.getElementById('registerBtn').addEventListener('click', handleRegister);
-document.getElementById('checkVerifyBtn').addEventListener('click', handleCheckVerify);
+document.getElementById('verifyCodeBtn').addEventListener('click', handleCheckVerify);
 document.getElementById('resendVerifyBtn').addEventListener('click', handleResendVerify);
 
 function translateError(code) {

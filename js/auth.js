@@ -19,8 +19,7 @@ export function watchAuth(callback) {
 export async function registerUser(username, email, password) {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(cred.user, { displayName: username });
-  // TODO: Setup Firebase email template untuk verification link, then enable this:
-  // await sendEmailVerification(cred.user);
+  await sendEmailVerification(cred.user);
   await setDoc(doc(db, 'users', cred.user.uid), {
     uid: cred.user.uid,
     username,
@@ -29,7 +28,7 @@ export async function registerUser(username, email, password) {
     avatarUrl: '',
     createdAt: serverTimestamp(),
     artworkCount: 0,
-    emailVerified: true  
+    emailVerified: false  
   });
   return cred.user;
 }
