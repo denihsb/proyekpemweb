@@ -82,9 +82,9 @@
 
 <script type="module">
 import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
-import { watchAuth, logoutUser, getUserProfile, syncNavAuth } from './js/auth.js';
+import { watchAuth, logoutUser, getUserProfile, syncNavAuth, ensureUserProfile } from './js/auth.js';
 import { fetchUserArtworks, renderArtGrid } from './js/gallery.js';
-import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { doc, updateDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from './js/firebase-config.js';
 
 initCursor();
@@ -102,6 +102,7 @@ watchAuth(async user => {
   }
 
   currentUser = user;
+  await ensureUserProfile(user);
   document.getElementById('authGate').style.display = 'none';
   document.getElementById('profileContent').style.display = 'block';
   document.getElementById('logoutBtn').style.display = '';
@@ -139,8 +140,24 @@ window.saveBio = async () => {
     document.getElementById('profileBio').textContent = bio || 'Belum ada bio.';
     window.toggleEdit();
     showToast('Bio berhasil diperbarui!', 'success');
-  } catch {
-    showToast('Gagal menyimpan bio.', 'error');
+  } catch (e) {
+    if (e.code === 'not-found') {
+      // Create user doc if it doesn't exist
+      await setDoc(doc(db, 'users', currentUser.uid), {
+        uid: currentUser.uid,
+        username: currentUser.displayName || 'Anonim',
+        email: currentUser.email || '',
+        bio,
+        avatarUrl: '',
+        createdAt: serverTimestamp(),
+        artworkCount: 0
+      });
+      document.getElementById('profileBio').textContent = bio || 'Belum ada bio.';
+      window.toggleEdit();
+      showToast('Bio berhasil diperbarui!', 'success');
+    } else {
+      showToast('Gagal menyimpan bio.', 'error');
+    }
   }
 };
 

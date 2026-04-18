@@ -102,7 +102,7 @@
 
 <script type="module">
 import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
-import { watchAuth, syncNavAuth } from './js/auth.js';
+import { watchAuth, syncNavAuth, ensureUserProfile } from './js/auth.js';
 import { uploadArtwork, validateImageFile } from './js/upload.js';
 
 initCursor();
@@ -111,12 +111,13 @@ initPageTransition();
 
 let selectedFile = null;
 
-watchAuth(user => {
+watchAuth(async user => {
   syncNavAuth(user);
   if (!user) {
     document.getElementById('authGate').style.display = 'flex';
     document.getElementById('uploadContent').style.display = 'none';
   } else {
+    await ensureUserProfile(user);
     document.getElementById('authGate').style.display = 'none';
     document.getElementById('uploadContent').style.display = 'block';
   }

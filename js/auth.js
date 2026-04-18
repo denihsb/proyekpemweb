@@ -46,6 +46,22 @@ export async function getUserProfile(uid) {
   return snap.exists() ? snap.data() : null;
 }
 
+// ── Ensure User Profile Exists ────────────────────────────────
+export async function ensureUserProfile(user) {
+  const profile = await getUserProfile(user.uid);
+  if (!profile) {
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      username: user.displayName || 'Anonim',
+      email: user.email || '',
+      bio: '',
+      avatarUrl: '',
+      createdAt: serverTimestamp(),
+      artworkCount: 0
+    });
+  }
+}
+
 // ── Update Nav Based on Auth ──────────────────────────────────
 export function syncNavAuth(user) {
   const guestLinks = document.querySelectorAll('[data-guest]');
