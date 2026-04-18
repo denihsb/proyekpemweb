@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Karya — ArtLocal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────── -->
+<nav class="nav scrolled">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">ArtLocal<span class="nav__logo-dot"></span></a>
+    <div class="nav__actions">
+      <a href="profile.html" class="btn btn--ghost" data-auth style="display:none" data-username>Profil</a>
+      <a href="auth.html" class="btn btn--ghost" data-guest>Masuk</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Gate (non-auth) ─────────────────────────────────── -->
+<div id="authGate" style="display:none;min-height:100dvh;display:none;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;text-align:center;padding:2rem;">
+  <p class="label">Akses Terbatas</p>
+  <h2>Kamu harus login dulu</h2>
+  <p style="color:var(--cream-dim)">Upload karya hanya untuk member ArtLocal.</p>
+  <a href="auth.html" class="btn btn--primary">Masuk / Daftar</a>
+</div>
+
+<!-- ── Upload Content ──────────────────────────────────── -->
+<div class="upload-page" id="uploadContent" style="display:none">
+  <div class="container">
+    <div style="margin-bottom:2.5rem">
+      <p class="label" style="margin-bottom:0.75rem">Studio Upload</p>
+      <h1 style="font-size:clamp(2rem,4vw,4rem)">Upload Karya</h1>
+    </div>
+
+    <div class="upload-grid">
+
+      <!-- Drop Zone -->
+      <div>
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-zone__icon">🎨</div>
+          <p class="drop-zone__label">Seret & Lepas gambar di sini</p>
+          <p class="drop-zone__sublabel">atau klik untuk pilih file</p>
+          <input type="file" id="fileInput" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+          <img class="drop-zone__preview" id="imgPreview" style="display:none">
+        </div>
+        <p style="font-size:0.75rem;color:var(--cream-dim);margin-top:0.75rem">
+          Format: JPG, PNG, WebP, GIF · Maks. 10MB
+        </p>
+      </div>
+
+      <!-- Form -->
+      <div>
+        <div id="uploadError" class="form-error" style="display:none"></div>
+
+        <!-- Progress -->
+        <div class="upload-progress" id="uploadProgress">
+          <p class="progress-text" id="progressText">Mengupload... 0%</p>
+          <div class="progress-bar">
+            <div class="progress-bar__fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="title">Judul Karya *</label>
+          <input type="text" id="title" class="form-input" placeholder="Masukkan judul karya" required>
+        </div>
+        <div class="form-group">
+          <label for="description">Deskripsi</label>
+          <textarea id="description" class="form-input" rows="4" placeholder="Ceritakan tentang karyamu..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="category">Kategori *</label>
+          <select id="category" class="form-input">
+            <option value="">Pilih kategori</option>
+            <option value="illustration">Ilustrasi</option>
+            <option value="photography">Fotografi</option>
+            <option value="digital">Digital Art</option>
+            <option value="painting">Lukisan</option>
+            <option value="sketch">Sketsa</option>
+            <option value="traditional">Seni Tradisional</option>
+            <option value="other">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="tags">Tags (pisah dengan koma)</label>
+          <input type="text" id="tags" class="form-input" placeholder="contoh: alam, abstrak, batik">
+        </div>
+
+        <button class="btn btn--primary" id="uploadBtn" onclick="handleUpload()" style="width:100%;justify-content:center;">
+          Upload Karya
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script type="module">
+import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
+import { watchAuth, syncNavAuth } from './js/auth.js';
+import { uploadArtwork, validateImageFile } from './js/upload.js';
+
+initCursor();
+initGrain();
+initPageTransition();
+
+let selectedFile = null;
+
+watchAuth(user => {
+  syncNavAuth(user);
+  if (!user) {
+    document.getElementById('authGate').style.display = 'flex';
+    document.getElementById('uploadContent').style.display = 'none';
+  } else {
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('uploadContent').style.display = 'block';
+  }
+});
+
+// Drop zone
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const imgPreview = document.getElementById('imgPreview');
+
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  const err = validateImageFile(file);
+  if (err) { showError(err); return; }
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    imgPreview.src = e.target.result;
+    imgPreview.style.display = 'block';
+    dropZone.querySelector('.drop-zone__icon').style.display = 'none';
+    dropZone.querySelector('.drop-zone__label').style.display = 'none';
+    dropZone.querySelector('.drop-zone__sublabel').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+window.handleUpload = async () => {
+  const errEl = document.getElementById('uploadError');
+  errEl.style.display = 'none';
+
+  if (!selectedFile) { showError('Pilih gambar dulu.'); return; }
+  const title = document.getElementById('title').value.trim();
+  if (!title) { showError('Judul karya wajib diisi.'); return; }
+  const category = document.getElementById('category').value;
+  if (!category) { showError('Pilih kategori.'); return; }
+
+  const desc  = document.getElementById('description').value.trim();
+  const tagsRaw = document.getElementById('tags').value;
+  const tags  = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+  const btn = document.getElementById('uploadBtn');
+  const progress = document.getElementById('uploadProgress');
+  const fill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+
+  btn.disabled = true;
+  btn.textContent = 'Mengupload...';
+  progress.classList.add('visible');
+
+  try {
+    const result = await uploadArtwork(
+      selectedFile,
+      { title, description: desc, category, tags },
+      pct => {
+        fill.style.width = pct + '%';
+        progressText.textContent = `Mengupload... ${pct}%`;
+      }
+    );
+    window.location.href = `artwork.html?id=${result.id}`;
+  } catch (e) {
+    showError(e.message || 'Gagal upload. Coba lagi.');
+    btn.disabled = false;
+    btn.textContent = 'Upload Karya';
+    progress.classList.remove('visible');
+  }
+};
+
+function showError(msg) {
+  const el = document.getElementById('uploadError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+</script>
+</body>
+</html>

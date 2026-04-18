@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk / Daftar — ArtLocal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- ── Left Visual ─────────────────────────────────────── -->
+  <div class="auth-visual">
+    <div class="auth-visual__bg"></div>
+    <div class="auth-visual__quote" data-reveal>
+      <blockquote>
+        "Seni adalah cara kita menyentuh jiwa orang lain tanpa menyentuh tubuh mereka."
+      </blockquote>
+      <cite>— Komunitas ArtLocal</cite>
+    </div>
+  </div>
+
+  <!-- ── Right Form ──────────────────────────────────────── -->
+  <div class="auth-form-side">
+    <div class="auth-box">
+      <div class="auth-box__logo">
+        Art<span>Local</span><span style="color:var(--accent)">.</span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Masuk</button>
+        <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">Daftar</button>
+      </div>
+
+      <!-- Login Form -->
+      <div class="auth-form active" id="formLogin">
+        <div id="loginError" class="form-error" style="display:none"></div>
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="kamu@email.com" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+        </div>
+        <button class="btn btn--primary" id="loginBtn" onclick="handleLogin()" style="width:100%;justify-content:center;margin-top:0.5rem">
+          Masuk
+        </button>
+        <p style="text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--cream-dim)">
+          Belum punya akun?
+          <button onclick="switchTab('register')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Daftar</button>
+        </p>
+      </div>
+
+      <!-- Register Form -->
+      <div class="auth-form" id="formRegister">
+        <div id="registerError" class="form-error" style="display:none"></div>
+        <div id="registerSuccess" class="form-success" style="display:none"></div>
+        <div class="form-group">
+          <label for="regName">Nama / Username</label>
+          <input type="text" id="regName" class="form-input" placeholder="Nama seniman kamu" required>
+        </div>
+        <div class="form-group">
+          <label for="regEmail">Email</label>
+          <input type="email" id="regEmail" class="form-input" placeholder="kamu@email.com" required>
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Password</label>
+          <input type="password" id="regPassword" class="form-input" placeholder="Min. 6 karakter" required>
+        </div>
+        <button class="btn btn--primary" id="registerBtn" onclick="handleRegister()" style="width:100%;justify-content:center;margin-top:0.5rem">
+          Buat Akun
+        </button>
+        <p style="text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--cream-dim)">
+          Sudah punya akun?
+          <button onclick="switchTab('login')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit">Masuk</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
+import { loginUser, registerUser, watchAuth } from './js/auth.js';
+
+initCursor();
+initGrain();
+initPageTransition();
+
+// Redirect if already logged in
+watchAuth(user => {
+  if (user) window.location.href = 'profile.html';
+});
+
+// Check hash
+if (window.location.hash === '#register') switchTab('register');
+
+window.switchTab = (tab) => {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+  document.getElementById(`form${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+};
+
+window.handleLogin = async () => {
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+
+  if (!email || !pass) { showError(errEl, 'Isi semua field dulu.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Memproses...';
+  errEl.style.display = 'none';
+
+  try {
+    await loginUser(email, pass);
+    window.location.href = 'profile.html';
+  } catch (e) {
+    showError(errEl, translateError(e.code));
+    btn.disabled = false;
+    btn.textContent = 'Masuk';
+  }
+};
+
+window.handleRegister = async () => {
+  const btn = document.getElementById('registerBtn');
+  const errEl = document.getElementById('registerError');
+  const sucEl = document.getElementById('registerSuccess');
+  const name  = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass  = document.getElementById('regPassword').value;
+
+  if (!name || !email || !pass) { showError(errEl, 'Isi semua field dulu.'); return; }
+  if (pass.length < 6) { showError(errEl, 'Password minimal 6 karakter.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Membuat akun...';
+  errEl.style.display = 'none';
+
+  try {
+    await registerUser(name, email, pass);
+    sucEl.textContent = 'Akun berhasil dibuat! Mengalihkan...';
+    sucEl.style.display = 'block';
+    setTimeout(() => window.location.href = 'profile.html', 1500);
+  } catch (e) {
+    showError(errEl, translateError(e.code));
+    btn.disabled = false;
+    btn.textContent = 'Buat Akun';
+  }
+};
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function translateError(code) {
+  const map = {
+    'auth/email-already-in-use': 'Email sudah terdaftar.',
+    'auth/invalid-email': 'Format email tidak valid.',
+    'auth/user-not-found': 'Email tidak ditemukan.',
+    'auth/wrong-password': 'Password salah.',
+    'auth/too-many-requests': 'Terlalu banyak percobaan. Coba lagi nanti.',
+    'auth/weak-password': 'Password terlalu lemah.'
+  };
+  return map[code] || 'Terjadi kesalahan. Coba lagi.';
+}
+</script>
+</body>
+</html>

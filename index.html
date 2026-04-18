@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArtLocal — Platform Seni Lokal Indonesia</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────── -->
+<nav class="nav" id="mainNav">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">
+      ArtLocal<span class="nav__logo-dot"></span>
+    </a>
+    <ul class="nav__links">
+      <li><a href="explore.html">Jelajahi</a></li>
+      <li><a href="explore.html?cat=illustration">Ilustrasi</a></li>
+      <li><a href="explore.html?cat=photography">Fotografi</a></li>
+      <li><a href="explore.html?cat=digital">Digital Art</a></li>
+    </ul>
+    <div class="nav__actions">
+      <!-- Guest -->
+      <a href="auth.html" class="btn btn--ghost" data-guest>Masuk</a>
+      <a href="auth.html#register" class="btn btn--primary" data-guest>Daftar</a>
+      <!-- Auth -->
+      <a href="upload.html" class="btn btn--outline" data-auth style="display:none">Upload Karya</a>
+      <a href="profile.html" class="btn btn--ghost" data-auth style="display:none" data-username>Profil</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero__bg"></div>
+  <div class="hero__scroll-line"></div>
+  <div class="container">
+    <div class="hero__tag">
+      <span class="label">Platform Seni Indonesia</span>
+    </div>
+    <h1 class="hero__title">
+      Tempat <em>karya</em> seniman<br>lokal bersinar
+    </h1>
+    <p class="hero__sub">
+      ArtLocal adalah ruang digital untuk para seniman Indonesia memamerkan, berbagi, dan menemukan apresiasi atas karya mereka.
+    </p>
+    <div class="hero__actions">
+      <a href="explore.html" class="btn btn--primary">Jelajahi Karya</a>
+      <a href="auth.html" class="btn btn--outline" data-guest>Bergabung Gratis</a>
+      <a href="upload.html" class="btn btn--outline" data-auth style="display:none">Upload Sekarang</a>
+    </div>
+    <div class="hero__stat-bar">
+      <div class="hero__stat" id="statArtworks">
+        <strong>—</strong>
+        <span>Karya</span>
+      </div>
+      <div class="hero__stat" id="statArtists">
+        <strong>—</strong>
+        <span>Seniman</span>
+      </div>
+      <div class="hero__stat">
+        <strong>100%</strong>
+        <span>Lokal</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Marquee ─────────────────────────────────────────── -->
+<div class="featured-strip">
+  <div class="featured-strip__track">
+    <span>Ilustrasi</span><span class="sep">✦</span>
+    <span>Fotografi</span><span class="sep">✦</span>
+    <span>Digital Art</span><span class="sep">✦</span>
+    <span>Lukisan</span><span class="sep">✦</span>
+    <span>Sketsa</span><span class="sep">✦</span>
+    <span>Komik</span><span class="sep">✦</span>
+    <span>Seni Tradisional</span><span class="sep">✦</span>
+    <span>Mixed Media</span><span class="sep">✦</span>
+    <!-- duplicate for seamless loop -->
+    <span>Ilustrasi</span><span class="sep">✦</span>
+    <span>Fotografi</span><span class="sep">✦</span>
+    <span>Digital Art</span><span class="sep">✦</span>
+    <span>Lukisan</span><span class="sep">✦</span>
+    <span>Sketsa</span><span class="sep">✦</span>
+    <span>Komik</span><span class="sep">✦</span>
+    <span>Seni Tradisional</span><span class="sep">✦</span>
+    <span>Mixed Media</span><span class="sep">✦</span>
+  </div>
+</div>
+
+<!-- ── Featured Artworks ───────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="section-header" data-reveal>
+      <div>
+        <p class="section-header__num label">01 / Terbaru</p>
+        <h2>Karya Pilihan</h2>
+      </div>
+      <a href="explore.html" class="btn btn--ghost">Lihat Semua →</a>
+    </div>
+    <div class="masonry" id="featuredGrid">
+      <!-- Loaded via JS -->
+      <div style="text-align:center;padding:4rem;color:var(--cream-dim);font-size:0.85rem;grid-column:1/-1;">
+        <span class="loader"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ─────────────────────────────────────────────── -->
+<section style="border-top:1px solid var(--border);">
+  <div class="container" style="text-align:center;" data-reveal>
+    <p class="label" style="margin-bottom:1rem">Untuk para seniman</p>
+    <h2 style="max-width:600px;margin:0 auto 1.5rem">
+      Sudah siap bagikan karyamu?
+    </h2>
+    <p style="color:var(--cream-dim);max-width:400px;margin:0 auto 2.5rem">
+      Daftarkan dirimu, upload karya, dan biarkan dunia melihat talentamu.
+    </p>
+    <a href="auth.html#register" class="btn btn--primary" data-guest>Mulai Sekarang</a>
+    <a href="upload.html" class="btn btn--primary" data-auth style="display:none">Upload Karya</a>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <span class="footer__logo">ArtLocal</span>
+    <span class="footer__copy">© 2025 ArtLocal. Dibuat dengan ❤ untuk seniman Indonesia.</span>
+  </div>
+</footer>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script type="module">
+import { initCursor, initScrollReveal, initGrain, initPageTransition } from './js/cursor.js';
+import { watchAuth, syncNavAuth } from './js/auth.js';
+import { fetchArtworks, renderArtGrid } from './js/gallery.js';
+import { collection, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { db } from './js/firebase-config.js';
+
+initCursor();
+initScrollReveal();
+initGrain();
+initPageTransition();
+
+// Scroll nav
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// Auth sync
+watchAuth(user => syncNavAuth(user));
+
+// Load featured artworks
+const grid = document.getElementById('featuredGrid');
+fetchArtworks(true).then(artworks => {
+  renderArtGrid(artworks.slice(0, 9), grid);
+}).catch(() => {
+  grid.innerHTML = '<p style="color:var(--cream-dim);text-align:center;padding:3rem;grid-column:1/-1">Gagal memuat karya.</p>';
+});
+
+// Stats
+async function loadStats() {
+  try {
+    const [artSnap, userSnap] = await Promise.all([
+      getCountFromServer(collection(db, 'artworks')),
+      getCountFromServer(collection(db, 'users'))
+    ]);
+    document.querySelector('#statArtworks strong').textContent = artSnap.data().count;
+    document.querySelector('#statArtists strong').textContent = userSnap.data().count;
+  } catch {}
+}
+loadStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karya — ArtLocal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────── -->
+<nav class="nav scrolled">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">ArtLocal<span class="nav__logo-dot"></span></a>
+    <div class="nav__actions">
+      <a href="explore.html" class="btn btn--ghost">← Kembali</a>
+      <a href="upload.html" class="btn btn--primary" data-auth style="display:none">Upload</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Artwork View ─────────────────────────────────────── -->
+<div class="artwork-page" id="artworkContent">
+
+  <div class="artwork-hero" id="artworkHero">
+    <span class="loader"></span>
+  </div>
+
+  <div class="container">
+    <div class="artwork-detail" id="artworkDetail">
+      <!-- JS populated -->
+    </div>
+
+    <!-- Related -->
+    <div style="margin-top:5rem;border-top:1px solid var(--border);padding-top:3rem;">
+      <div class="section-header">
+        <h3>Karya Lainnya</h3>
+        <a href="explore.html" class="btn btn--ghost">Jelajahi Semua →</a>
+      </div>
+      <div class="masonry" id="relatedGrid">
+        <div style="text-align:center;padding:2rem;color:var(--cream-dim);">
+          <span class="loader"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script type="module">
+import { initCursor, initScrollReveal, initGrain, initPageTransition } from './js/cursor.js';
+import { watchAuth, syncNavAuth } from './js/auth.js';
+import { fetchArtwork, fetchArtworks, renderArtGrid } from './js/gallery.js';
+import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { db } from './js/firebase-config.js';
+
+initCursor();
+initScrollReveal();
+initGrain();
+initPageTransition();
+
+watchAuth(user => syncNavAuth(user));
+
+const id = new URLSearchParams(window.location.search).get('id');
+if (!id) { window.location.href = 'explore.html'; }
+
+async function loadArtwork() {
+  const artwork = await fetchArtwork(id);
+  if (!artwork) { window.location.href = 'explore.html'; return; }
+
+  // Update title
+  document.title = `${artwork.title} — ArtLocal`;
+
+  // Hero image
+  const hero = document.getElementById('artworkHero');
+  hero.innerHTML = `<img src="${artwork.imageUrl}" alt="${artwork.title}">`;
+
+  // Detail
+  const createdDate = artwork.createdAt?.toDate
+    ? artwork.createdAt.toDate().toLocaleDateString('id-ID', { year:'numeric', month:'long', day:'numeric' })
+    : 'Tidak diketahui';
+
+  const detail = document.getElementById('artworkDetail');
+  detail.innerHTML = `
+    <div>
+      <h1 class="artwork-detail__title">${artwork.title}</h1>
+      <div class="artwork-detail__artist">
+        <span class="art-card__dot"></span>
+        <a href="explore.html?artist=${artwork.artistUid}">${artwork.artistName}</a>
+      </div>
+      <p class="artwork-detail__desc">${artwork.description || 'Tidak ada deskripsi.'}</p>
+      ${artwork.tags?.length ? `
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          ${artwork.tags.map(t => `<span style="padding:0.3rem 0.8rem;border:1px solid var(--border);border-radius:100px;font-size:0.75rem;color:var(--cream-dim);">#${t}</span>`).join('')}
+        </div>
+      ` : ''}
+    </div>
+    <div>
+      <div class="artwork-meta-card">
+        <div class="artwork-meta-card__row">
+          <span class="artwork-meta-card__key">Seniman</span>
+          <span>${artwork.artistName}</span>
+        </div>
+        <div class="artwork-meta-card__row">
+          <span class="artwork-meta-card__key">Kategori</span>
+          <span style="text-transform:capitalize">${artwork.category || 'Lainnya'}</span>
+        </div>
+        <div class="artwork-meta-card__row">
+          <span class="artwork-meta-card__key">Diunggah</span>
+          <span>${createdDate}</span>
+        </div>
+        <div class="artwork-meta-card__row">
+          <span class="artwork-meta-card__key">Dilihat</span>
+          <span>${(artwork.views || 0) + 1}x</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Increment views silently
+  updateDoc(doc(db, 'artworks', id), { views: increment(1) }).catch(() => {});
+}
+
+async function loadRelated() {
+  const artworks = await fetchArtworks(true);
+  const filtered = artworks.filter(a => a.id !== id).slice(0, 6);
+  renderArtGrid(filtered, document.getElementById('relatedGrid'));
+}
+
+loadArtwork();
+loadRelated();
+</script>
+</body>
+</html>

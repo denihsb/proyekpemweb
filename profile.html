@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil — ArtLocal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────── -->
+<nav class="nav scrolled">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">ArtLocal<span class="nav__logo-dot"></span></a>
+    <div class="nav__actions">
+      <a href="upload.html" class="btn btn--outline" data-auth style="display:none">Upload Karya</a>
+      <button class="btn btn--ghost" id="logoutBtn" style="display:none" onclick="handleLogout()">Keluar</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Gate ────────────────────────────────────────────── -->
+<div id="authGate" style="display:none;min-height:100dvh;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;text-align:center;padding:2rem;">
+  <h2>Login dulu yuk</h2>
+  <a href="auth.html" class="btn btn--primary">Masuk / Daftar</a>
+</div>
+
+<!-- ── Profile Content ─────────────────────────────────── -->
+<div class="profile-page" id="profileContent" style="display:none">
+  <div class="profile-header">
+    <div class="container">
+      <div class="profile-header__inner">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div class="profile-info">
+          <h1 class="profile-info__name" id="profileName">—</h1>
+          <p class="profile-info__bio" id="profileBio">Belum ada bio.</p>
+          <div class="profile-info__meta">
+            <div class="profile-meta__item">
+              <span class="profile-meta__num" id="artworkCount">0</span>
+              <span class="profile-meta__label">Karya</span>
+            </div>
+          </div>
+          <div style="margin-top:1.5rem;display:flex;gap:1rem;flex-wrap:wrap">
+            <button class="btn btn--outline" id="editToggleBtn" onclick="toggleEdit()">Edit Profil</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Form (hidden by default) -->
+      <div id="editForm" style="display:none;margin-top:2rem;max-width:480px">
+        <div class="divider"></div>
+        <div class="form-group">
+          <label for="editBio">Bio</label>
+          <textarea id="editBio" class="form-input" rows="3" placeholder="Ceritakan tentang dirimu..."></textarea>
+        </div>
+        <div style="display:flex;gap:1rem">
+          <button class="btn btn--primary" onclick="saveBio()">Simpan</button>
+          <button class="btn btn--ghost" onclick="toggleEdit()">Batal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Artworks -->
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <p class="section-header__num label">Koleksi</p>
+        <h2>Karya Saya</h2>
+      </div>
+      <a href="upload.html" class="btn btn--primary">+ Upload Baru</a>
+    </div>
+    <div class="masonry" id="myArtGrid">
+      <div style="text-align:center;padding:3rem;color:var(--cream-dim);">
+        <span class="loader"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script type="module">
+import { initCursor, initGrain, initPageTransition } from './js/cursor.js';
+import { watchAuth, logoutUser, getUserProfile, syncNavAuth } from './js/auth.js';
+import { fetchUserArtworks, renderArtGrid } from './js/gallery.js';
+import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { db } from './js/firebase-config.js';
+
+initCursor();
+initGrain();
+initPageTransition();
+
+let currentUser = null;
+
+watchAuth(async user => {
+  syncNavAuth(user);
+  if (!user) {
+    document.getElementById('authGate').style.display = 'flex';
+    document.getElementById('profileContent').style.display = 'none';
+    return;
+  }
+
+  currentUser = user;
+  document.getElementById('authGate').style.display = 'none';
+  document.getElementById('profileContent').style.display = 'block';
+  document.getElementById('logoutBtn').style.display = '';
+
+  // Profile data
+  const profile = await getUserProfile(user.uid);
+  const name = profile?.username || user.displayName || 'Seniman';
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('profileBio').textContent = profile?.bio || 'Belum ada bio.';
+  document.getElementById('editBio').value = profile?.bio || '';
+  document.getElementById('artworkCount').textContent = profile?.artworkCount || 0;
+
+  // Load artworks
+  const artworks = await fetchUserArtworks(user.uid);
+  renderArtGrid(artworks, document.getElementById('myArtGrid'));
+  document.getElementById('artworkCount').textContent = artworks.length;
+});
+
+window.handleLogout = async () => {
+  await logoutUser();
+  window.location.href = 'index.html';
+};
+
+window.toggleEdit = () => {
+  const form = document.getElementById('editForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+};
+
+window.saveBio = async () => {
+  if (!currentUser) return;
+  const bio = document.getElementById('editBio').value.trim();
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { bio });
+    document.getElementById('profileBio').textContent = bio || 'Belum ada bio.';
+    window.toggleEdit();
+    showToast('Bio berhasil diperbarui!', 'success');
+  } catch {
+    showToast('Gagal menyimpan bio.', 'error');
+  }
+};
+
+function showToast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>
