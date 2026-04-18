@@ -29,7 +29,7 @@ export async function registerUser(username, email, password) {
     avatarUrl: '',
     createdAt: serverTimestamp(),
     artworkCount: 0,
-    emailVerified: true  // Skip verification for development
+    emailVerified: true  
   });
   return cred.user;
 }
