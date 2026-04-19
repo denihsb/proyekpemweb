@@ -30,7 +30,8 @@
   <div class="profile-header">
     <div class="container">
       <div class="profile-header__inner">
-        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div class="profile-avatar" id="profileAvatar" style="cursor:pointer">?</div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none">      
         <div class="profile-info">
           <h1 class="profile-info__name" id="profileName">—</h1>
           <p class="profile-info__bio" id="profileBio">Belum ada bio.</p>
@@ -71,9 +72,9 @@
   <!-- Artworks -->
   <div class="container">
     <div class="section-header">
-      <div>
-        <p class="section-header__num label">Koleksi</p>
-        <h2>Karya Saya</h2>
+      <div style="display:flex;gap:1rem;align-items:center">
+        <h2 id="tabMyArt" style="cursor:pointer">Karya Saya</h2>
+        <h2 id="tabLiked" style="cursor:pointer;opacity:0.5">❤️ Disukai</h2>
       </div>
       <a href="upload.html" class="btn btn--primary">+ Upload Baru</a>
     </div>
@@ -93,16 +94,28 @@ import { watchAuth, logoutUser, getUserProfile, syncNavAuth, ensureUserProfile, 
 import { fetchUserArtworks, renderArtGrid } from './js/gallery.js';
 import { doc, updateDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from './js/firebase-config.js';
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { fetchArtwork } from './js/gallery.js';
 
 initCursor();
 initGrain();
 initPageTransition();
 
 let currentUser = null;
+let targetUid = null;
+
+const urlParams = new URLSearchParams(window.location.search);
+const profileUid = urlParams.get('uid');
+const avatar = document.getElementById('profileAvatar');
+const avatarInput = document.getElementById('avatarInput');
+
+avatar.onclick = () => {
+  avatarInput.click();
+};
 
 watchAuth(async user => {
   syncNavAuth(user);
-  if (!user) {
+  if (!user && !profileUid) {
     document.getElementById('authGate').style.display = 'flex';
     document.getElementById('profileContent').style.display = 'none';
     return;
@@ -114,6 +127,12 @@ watchAuth(async user => {
   document.getElementById('profileContent').style.display = 'block';
   document.getElementById('logoutBtn').style.display = '';
 
+  // 🔥 SEMBUNYIKAN EDIT JIKA LIHAT PROFILE ORANG LAIN
+if (profileUid && profileUid !== user.uid) {
+  document.getElementById('editToggleBtn').style.display = 'none';
+  document.querySelector('[href="upload.html"]').style.display = 'none';
+}
+
   // Show warning jika email belum diverifikasi
   if (!user.emailVerified) {
     document.getElementById('unverifiedBanner').style.display = 'block';
@@ -122,19 +141,128 @@ watchAuth(async user => {
   }
 
   // Profile data
-  const profile = await getUserProfile(user.uid);
+  targetUid = profileUid || user.uid;
+  const profile = await getUserProfile(targetUid);
   const name = profile?.username || user.displayName || 'Seniman';
   document.getElementById('profileName').textContent = name;
-  document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
+  const avatarEl = document.getElementById('profileAvatar');
+
+  if (profile?.avatar) {
+    avatarEl.innerHTML = `<img src="${profile.avatar}" />`;
+  } else {
+    avatarEl.textContent = name.charAt(0).toUpperCase();
+  }
   document.getElementById('profileBio').textContent = profile?.bio || 'Belum ada bio.';
   document.getElementById('editBio').value = profile?.bio || '';
   document.getElementById('artworkCount').textContent = profile?.artworkCount || 0;
+  document.getElementById('myArtGrid').innerHTML = '<span class="loader"></span>';
 
-  // Load artworks
-  const artworks = await fetchUserArtworks(user.uid);
-  renderArtGrid(artworks, document.getElementById('myArtGrid'));
+// Load artworks (KARYA SENDIRI)
+const artworks = await fetchUserArtworks(targetUid);
+renderArtGrid(artworks, document.getElementById('myArtGrid'));
   document.getElementById('artworkCount').textContent = artworks.length;
 });
+
+async function uploadToCloudinary(file) {
+  const url = `https://api.cloudinary.com/v1_1/dwoyzgfxh/image/upload`;
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', 'artlocal_avatar');
+
+  const res = await fetch(url, {
+    method: 'POST',
+    body: formData
+  });
+
+  const data = await res.json();
+  return data.secure_url;
+}
+
+avatarInput.onchange = async () => {
+  const file = avatarInput.files[0];
+  if (!file) return;
+
+  avatar.innerHTML = '⏳';
+
+  try {
+    const imageUrl = await uploadToCloudinary(file);
+
+    // 🔥 simpan ke firestore
+    await setDoc(doc(db, 'users', currentUser.uid), {
+      avatar: imageUrl
+    }, { merge: true });
+
+    // 🔥 tampilkan langsung
+    avatar.innerHTML = `<img src="${imageUrl}" />`;
+
+    showToast('Avatar berhasil diupdate!', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Upload gagal 😢', 'error');
+  }
+};
+
+async function loadLikedArtworks(uid) {
+  const q = query(
+    collection(db, 'likes'),
+    where('userId', '==', uid)
+  );
+
+  const snap = await getDocs(q);
+
+  const artworkIds = [];
+
+  snap.forEach(doc => {
+    artworkIds.push(doc.data().artworkId);
+  });
+
+  if (artworkIds.length === 0) {
+    document.getElementById('myArtGrid').innerHTML = `
+      <p style="text-align:center;color:gray">Belum ada yang di-like 😢</p>
+    `;
+    return;
+  }
+
+  // 🔥 INI YANG BENAR (fetch per ID)
+  const artworks = await Promise.all(
+    artworkIds.map(id =>
+      fetchArtwork(id).catch(() => null)
+    )
+  );
+
+  renderArtGrid(
+    artworks.filter(Boolean),
+    document.getElementById('myArtGrid')
+  );
+}
+
+
+const tabMyArt = document.getElementById('tabMyArt');
+const tabLiked = document.getElementById('tabLiked');
+
+tabLiked.onclick = async () => {
+  if (!targetUid) return; // 🔥 penting
+
+  tabLiked.style.opacity = '1';
+  tabMyArt.style.opacity = '0.5';
+
+  document.getElementById('myArtGrid').innerHTML = '<span class="loader"></span>';
+
+  await loadLikedArtworks(targetUid);
+};
+
+tabMyArt.onclick = async () => {
+  if (!targetUid) return;
+
+  tabMyArt.style.opacity = '1';
+  tabLiked.style.opacity = '0.5';
+
+  document.getElementById('myArtGrid').innerHTML = '<span class="loader"></span>';
+
+  const artworks = await fetchUserArtworks(targetUid);
+  renderArtGrid(artworks, document.getElementById('myArtGrid'));
+};
 
 window.handleLogout = async () => {
   await logoutUser();

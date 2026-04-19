@@ -54,9 +54,11 @@ import { watchAuth, syncNavAuth } from './js/auth.js';
 import { fetchArtwork, fetchArtworks, renderArtGrid } from './js/gallery.js';
 import {
   doc, updateDoc, increment,
-  setDoc, deleteDoc, getDoc
+  setDoc, deleteDoc, getDoc,
+  addDoc, collection, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { auth, db } from './js/firebase-config.js';
+import { onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 initCursor();
 initScrollReveal();
@@ -64,6 +66,8 @@ initGrain();
 initPageTransition();
 
 watchAuth(user => syncNavAuth(user));
+
+console.log("VERSI BARU");
 
 const id = new URLSearchParams(window.location.search).get('id');
 if (!id) { window.location.href = 'explore.html'; }
@@ -84,52 +88,85 @@ async function loadArtwork() {
     ? artwork.createdAt.toDate().toLocaleDateString('id-ID', { year:'numeric', month:'long', day:'numeric' })
     : 'Tidak diketahui';
 
-  const detail = document.getElementById('artworkDetail');
-  detail.innerHTML = `
-    <div>
-      <h1 class="artwork-detail__title">${artwork.title}</h1>
-      <button id="likeBtn" class="btn btn--outline" style="margin-top:1rem">
-      ❤️ Like
-      </button>
-      <span id="likeCount">${artwork.likes || 0}</span>
+const detail = document.getElementById('artworkDetail');
+detail.innerHTML = `
+  <div>
+    <h1 class="artwork-detail__title">${artwork.title}</h1>
 
-      <div class="artwork-detail__artist">
-        <span class="art-card__dot"></span>
-        <a href="explore.html?artist=${artwork.artistUid}">${artwork.artistName}</a>
-      </div>
-      <p class="artwork-detail__desc">${artwork.description || 'Tidak ada deskripsi.'}</p>
-      ${artwork.tags?.length ? `
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-          ${artwork.tags.map(t => `<span style="padding:0.3rem 0.8rem;border:1px solid var(--border);border-radius:100px;font-size:0.75rem;color:var(--cream-dim);">#${t}</span>`).join('')}
-        </div>
-      ` : ''}
+    <button id="likeBtn" class="btn btn--outline" style="margin-top:1rem">
+      ❤️ Like
+    </button>
+    <span id="likeCount">${artwork.likes || 0}</span>
+
+    <div class="artwork-detail__artist">
+      <span class="art-card__dot"></span>
+      <a href="profile.html?uid=${artwork.artistUid}">${artwork.artistName}</a>
     </div>
-    <div>
-      <div class="artwork-meta-card">
-        <div class="artwork-meta-card__row">
-          <span class="artwork-meta-card__key">Seniman</span>
-          <span>${artwork.artistName}</span>
-        </div>
-        <div class="artwork-meta-card__row">
-          <span class="artwork-meta-card__key">Kategori</span>
-          <span style="text-transform:capitalize">${artwork.category || 'Lainnya'}</span>
-        </div>
-        <div class="artwork-meta-card__row">
-          <span class="artwork-meta-card__key">Diunggah</span>
-          <span>${createdDate}</span>
-        </div>
-        <div class="artwork-meta-card__row">
-          <span class="artwork-meta-card__key">Dilihat</span>
-          <span>${(artwork.views || 0) + 1}x</span>
-        </div>
+
+    <p class="artwork-detail__desc">${artwork.description || 'Tidak ada deskripsi.'}</p>
+
+    ${artwork.tags?.length ? `
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        ${artwork.tags.map(t => `
+          <span style="padding:0.3rem 0.8rem;border:1px solid var(--border);border-radius:100px;font-size:0.75rem;color:var(--cream-dim);">
+            #${t}
+          </span>
+        `).join('')}
+      </div>
+    ` : ''}
+  </div>
+
+  <div>
+    <div class="artwork-meta-card">
+      <div class="artwork-meta-card__row">
+        <span class="artwork-meta-card__key">Seniman</span>
+        <span>${artwork.artistName}</span>
+      </div>
+      <div class="artwork-meta-card__row">
+        <span class="artwork-meta-card__key">Kategori</span>
+        <span style="text-transform:capitalize">${artwork.category || 'Lainnya'}</span>
+      </div>
+      <div class="artwork-meta-card__row">
+        <span class="artwork-meta-card__key">Diunggah</span>
+        <span>${createdDate}</span>
+      </div>
+      <div class="artwork-meta-card__row">
+        <span class="artwork-meta-card__key">Dilihat</span>
+        <span>${(artwork.views || 0) + 1}x</span>
       </div>
     </div>
-  `;
+
+    <!-- KOMENTAR -->
+    <div style="margin-top:2rem">
+      <h3>Komentar</h3>
+      <div id="commentList" style="margin:1rem 0"></div>
+
+      <textarea id="commentInput"
+        placeholder="Tulis komentar..."
+        style="width:100%;padding:0.5rem;margin-bottom:0.5rem">
+      </textarea>
+
+      <button id="commentBtn" class="btn btn--primary">
+        Kirim
+      </button>
+    </div>
+  </div>
+`;
 
 // ================== LIKE SYSTEM ==================
 
 const likeBtn = document.getElementById('likeBtn');
 const likeCount = document.getElementById('likeCount');
+
+const artworkRef = doc(db, 'artworks', id);
+
+onSnapshot(artworkRef, (snap) => {
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+  likeCount.textContent = data.likes || 0;
+  }
+);
 
 // cek status awal
 async function checkLikeStatus() {
@@ -142,14 +179,10 @@ async function checkLikeStatus() {
   const likeId = `${user.uid}_${id}`;
   const snap = await getDoc(doc(db, 'likes', likeId));
 
-  if (snap.exists()) {
-    likeBtn.textContent = '💔 Liked';
-  } else {
-    likeBtn.textContent = '❤️ Like';
-  }
+  likeBtn.textContent = snap.exists() ? '💔 Liked' : '❤️ Like';
 }
 
-// klik tombol
+// klik like
 likeBtn.onclick = async () => {
   const user = auth.currentUser;
   if (!user) {
@@ -160,21 +193,106 @@ likeBtn.onclick = async () => {
   await toggleLike(id);
 
   const current = parseInt(likeCount.textContent || '0', 10);
-
+  
   const likeId = `${user.uid}_${id}`;
   const snap = await getDoc(doc(db, 'likes', likeId));
 
   if (snap.exists()) {
     likeBtn.textContent = '💔 Liked';
     likeCount.textContent = current + 1;
+    likeCount.textContent = Math.max(0, current - 1);
   } else {
     likeBtn.textContent = '❤️ Like';
     likeCount.textContent = Math.max(0, current - 1);
   }
 };
 
-// panggil saat load
 await checkLikeStatus();
+
+// ================== COMMENT SYSTEM ==================
+
+const commentList = document.getElementById('commentList');
+const commentInput = document.getElementById('commentInput');
+const commentBtn = document.getElementById('commentBtn');
+
+// load komentar
+function loadCommentsRealtime() {
+  const q = query(
+    collection(db, 'comments'),
+    where('artworkId', '==', id)
+  );
+
+  onSnapshot(q, (snap) => {
+    commentList.innerHTML = '';
+
+    snap.forEach(docSnap => {
+      const c = docSnap.data();
+
+      const isOwner =
+        auth.currentUser &&
+        auth.currentUser.uid === c.userId;
+
+      commentList.innerHTML += `
+        <div style="margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center">
+          
+          <div>
+            <strong>${c.userName}</strong>: ${c.text}
+          </div>
+
+          ${
+            isOwner
+              ? `<button class="deleteCommentBtn" data-id="${docSnap.id}" style="font-size:0.7rem;color:red">hapus</button>`
+              : ''
+          }
+
+        </div>
+      `;
+    });
+
+    // 🔥 EVENT DELETE (WAJIB DI DALAM onSnapshot)
+    document.querySelectorAll('.deleteCommentBtn').forEach(btn => {
+      btn.onclick = async () => {
+        const commentId = btn.getAttribute('data-id');
+
+        if (!confirm("Hapus komentar ini?")) return;
+
+        await deleteDoc(doc(db, 'comments', commentId));
+      };
+    });
+  });
+}
+
+// kirim komentar
+commentBtn.onclick = async () => {
+  console.log("KLIK TERDETEK");
+
+  const user = auth.currentUser;
+  if (!user) {
+    alert("Login dulu ya!");
+    return;
+  }
+
+  const text = commentInput.value.trim();
+  if (!text) return;
+
+  try {
+    await addDoc(collection(db, 'comments'), {
+      artworkId: id,
+      userId: user.uid,
+      userName: user.displayName || "Anonim",
+      text,
+      createdAt: new Date()
+    });
+
+    commentInput.value = '';
+
+  } catch (e) {
+    console.error("ERROR KOMENTAR:", e);
+  }
+};
+
+// load pertama
+loadCommentsRealtime();
 
   // Increment views silently
   updateDoc(doc(db, 'artworks', id), { views: increment(1) }).catch(() => {});

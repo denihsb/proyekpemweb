@@ -1,15 +1,27 @@
-import { db } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import {
   collection, query, orderBy, limit, getDocs,
-  doc, getDoc, where, startAfter
+  doc, getDoc, where, startAfter,
+  updateDoc, increment, setDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let lastDoc = null;
 let allCached = []; // cache semua artwork buat client-side filter
 const PAGE_SIZE = 12;
 
 // ── Fetch Artworks ────────────────────────────────────────────
-// Selalu fetch tanpa filter category di Firestore (hindari composite index),
+export async function fetchAllArtworks() {
+  const snap = await getDocs(collection(db, 'artworks'));
+
+  const data = [];
+  snap.forEach(doc => {
+    data.push({ id: doc.id, ...doc.data() });
+  });
+
+  return data;
+}
+
 // lalu filter di client-side.
 export async function fetchArtworks(reset = false, category = null) {
   if (reset) {
@@ -82,6 +94,7 @@ export async function fetchUserArtworks(uid) {
 // ── Render Masonry Card ───────────────────────────────────────
 export function createArtCard(artwork) {
   const card = document.createElement('article');
+  
   card.className = 'art-card';
   card.setAttribute('data-id', artwork.id);
 
@@ -100,9 +113,77 @@ export function createArtCard(artwork) {
           ${artwork.artistName}
         </p>
       </div>
+      <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem">
+        <button class="likeBtn">❤️</button>
+        <span class="likeCount">${artwork.likes || 0}</span>
+      </div>
     </a>
   `;
 
+const likeBtn = card.querySelector('.likeBtn');
+const likeCount = card.querySelector('.likeCount');
+
+const artworkRef = doc(db, 'artworks', artwork.id);
+
+// 🔥 realtime update count
+onSnapshot(artworkRef, (snap) => {
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+  likeCount.textContent = data.likes || 0;
+});
+
+// 🔥 cek status awal + set class
+if (auth.currentUser) {
+  const likeId = `${auth.currentUser.uid}_${artwork.id}`;
+  getDoc(doc(db, 'likes', likeId)).then(snap => {
+    if (snap.exists()) {
+      likeBtn.textContent = '💔';
+      likeBtn.classList.add('liked'); // anim state
+    }
+  });
+}
+
+likeBtn.onclick = async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const user = auth.currentUser;
+  if (!user) {
+    alert("Login dulu ya!");
+    return;
+  }
+
+  const likeId = `${user.uid}_${artwork.id}`;
+  const likeRef = doc(db, 'likes', likeId);
+
+  const snap = await getDoc(likeRef);
+
+  if (snap.exists()) {
+    await deleteDoc(likeRef);
+    await updateDoc(artworkRef, { likes: increment(-1) });
+
+    likeBtn.textContent = '❤️';
+    likeBtn.classList.remove('liked');
+
+  } else {
+    await setDoc(likeRef, {
+      userId: user.uid,
+      artworkId: artwork.id
+    });
+
+    await updateDoc(artworkRef, { likes: increment(1) });
+
+    likeBtn.textContent = '💔';
+    likeBtn.classList.add('liked');
+
+    // 🔥 animasi pop
+    likeBtn.classList.add('pop');
+    setTimeout(() => {
+      likeBtn.classList.remove('pop');
+    }, 250);
+  }
+};
   return card;
 }
 
@@ -119,10 +200,12 @@ export function renderArtGrid(artworks, container, append = false) {
     return;
   }
 
-  artworks.forEach((artwork, i) => {
+  artworks.forEach((artwork, i) => 
+    {
     const card = createArtCard(artwork);
     card.style.animationDelay = `${i * 80}ms`;
     card.classList.add('art-card--anim');
     container.appendChild(card);
-  });
+    }
+  );
 }

@@ -48,6 +48,16 @@
       <button class="filter-btn" data-cat="other" onclick="filterBy('other')">Lainnya</button>
     </div>
 
+    <div class="search-warp">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Cari karya..."
+        class="form-input"
+        style="max-width:400px"
+      />
+  <button onclick="clearSearch()" class="btn btn--ghost">✖</button>
+    </div>
     <!-- Grid -->
     <div class="masonry" id="artGrid">
       <div style="text-align:center;padding:5rem;color:var(--cream-dim);">
@@ -76,7 +86,7 @@
 <script type="module">
 import { initCursor, initScrollReveal, initGrain, initPageTransition } from './js/cursor.js';
 import { watchAuth, syncNavAuth } from './js/auth.js';
-import { fetchArtworks, renderArtGrid } from './js/gallery.js';
+import { fetchAllArtworks, renderArtGrid } from './js/gallery.js';
 
 initCursor();
 initScrollReveal();
@@ -92,6 +102,81 @@ let hasMore = true;
 const grid = document.getElementById('artGrid');
 const loadMoreWrap = document.getElementById('loadMoreWrap');
 
+// ===== SEARCH EXPLORE =====
+const searchInput = document.getElementById('searchInput');
+
+let allArtworks = [];
+
+// 🔥 LOAD SEMUA KARYA
+async function loadAllArtworks() {
+  grid.innerHTML = '<span class="loader"></span>';
+  const artworks = await fetchAllArtworks(); // ⬅️ ini penting
+
+  allArtworks = artworks;
+  renderArtGrid(artworks, document.getElementById('artGrid'));
+}
+
+// 🔍 SEARCH REALTIME
+let debounceTimer;
+
+searchInput.oninput = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    applyFilter();
+  }, 300);
+};
+
+window.filterBy = (cat) => {
+  currentCat = cat;
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === cat);
+  });
+
+  applyFilter();
+};
+
+function applyFilter() {
+  const keyword = searchInput.value.toLowerCase();
+
+  let filtered = allArtworks;
+
+  // 🔍 filter kategori
+  if (currentCat !== 'all') {
+    filtered = filtered.filter(a => a.category === currentCat);
+  }
+
+  // 🔍 filter search
+  if (keyword) {
+    filtered = filtered.filter(a =>
+      (a.title || '').toLowerCase().includes(keyword) ||
+      (a.description || '').toLowerCase().includes(keyword)
+    );
+  }
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+  <div style="text-align:center;padding:3rem;color:gray">
+    <p style="font-size:1.2rem;margin-bottom:0.5rem">Tidak ditemukan 😢</p>
+    <small>Coba kata kunci lain atau kategori berbeda</small>
+  </div>
+  `;
+    return;
+  }
+
+  if (!keyword && currentCat === 'all') {
+    renderArtGrid(allArtworks, grid);
+    return;
+  }
+
+  renderArtGrid(filtered, grid);
+}
+
+window.clearSearch = () => {
+  searchInput.value = '';
+  applyFilter();
+};
+
 // Check URL param
 const urlCat = new URLSearchParams(window.location.search).get('cat');
 if (urlCat) {
@@ -101,38 +186,7 @@ if (urlCat) {
   });
 }
 
-async function loadArtworks(reset = false) {
-  if (isLoading) return;
-  isLoading = true;
-
-  if (reset) {
-    grid.innerHTML = '<div style="text-align:center;padding:5rem;color:var(--cream-dim);"><span class="loader"></span></div>';
-    loadMoreWrap.style.display = 'none';
-  }
-
-  try {
-    const artworks = await fetchArtworks(reset, currentCat === 'all' ? null : currentCat);
-    renderArtGrid(artworks, grid, !reset);
-    hasMore = artworks.length === 12;
-    loadMoreWrap.style.display = hasMore ? 'flex' : 'none';
-  } catch (e) {
-    grid.innerHTML = '<p style="color:var(--cream-dim);text-align:center;padding:3rem;">Gagal memuat karya.</p>';
-  } finally {
-    isLoading = false;
-  }
-}
-
-window.filterBy = (cat) => {
-  currentCat = cat;
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.cat === cat);
-  });
-  loadArtworks(true);
-};
-
-window.loadMore = () => loadArtworks(false);
-
-loadArtworks(true);
+loadAllArtworks();  
 </script>
 </body>
 </html>

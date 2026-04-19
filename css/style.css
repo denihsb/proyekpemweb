@@ -713,18 +713,22 @@ h3 { font-size: clamp(1.4rem, 2.5vw, 2rem); }
   flex-wrap: wrap;
 }
 .profile-avatar {
-  width: 96px;
-  height: 96px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  font-family: var(--font-display);
-  font-size: 2.5rem;
+  background: #ddd;
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .profile-info__name {
   font-family: var(--font-display);
@@ -873,6 +877,25 @@ section { padding-block: clamp(4rem, 8vw, 7rem); }
   to   { opacity: 1; transform: none; }
 }
 
+/* ── Like Button ────────────────────────────────────────────── */
+.likeBtn {
+  transition: transform 0.15s ease;
+}
+
+.likeBtn.liked {
+  transform: scale(1.3);
+}
+
+.likeBtn.pop {
+  animation: likePop 0.25s ease;
+}
+
+@keyframes likePop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
 /* ── Empty State ────────────────────────────────────────────── */
 .empty-state {
   text-align: center;
@@ -915,3 +938,149 @@ select.form-input {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--cream-dim); }
+
+/* ============================================================
+   MOBILE OPTIMIZATION — FINAL TOUCH
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ── Typography ───────────────────────── */
+  h1 { font-size: 2rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.2rem !important; }
+
+  body {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── Container ────────────────────────── */
+  .container {
+    padding-inline: 1rem;
+  }
+
+  /* ── Navigation ───────────────────────── */
+  .nav__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .nav__links {
+    display: none; /* optional: sembunyikan menu */
+  }
+
+  .nav__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* ── Buttons ─────────────────────────── */
+  .btn {
+    min-height: 44px;
+    font-size: 0.75rem;
+    padding: 0.6rem 1rem;
+  }
+
+  /* ── Hero ────────────────────────────── */
+  .hero {
+    padding-bottom: 3rem;
+  }
+
+  .hero__stat-bar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* ── Masonry Grid ───────────────────── */
+  .masonry {
+    columns: 2 !important;
+    column-gap: 0.75rem;
+  }
+
+  @media (max-width: 480px) {
+  .masonry {
+    columns: 1 !important;
+  }
+}
+
+
+
+@media (max-width: 768px) {
+  :root {
+    --nav-h: 100px;
+  }
+}
+  .art-card {
+    margin-bottom: 0.75rem;
+  }
+
+  /* ── Filter Bar (SCROLL) ─────────────── */
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 0.4rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-btn {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.35rem 0.8rem;
+  }
+
+  /* ── Search Layout ───────────────────── */
+  .search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-wrap input {
+    width: 100%;
+  }
+
+  .search-wrap button {
+    width: 100%;
+  }
+
+  /* ── Profile ────────────────────────── */
+  .profile-header__inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .profile-avatar {
+    margin: 0 auto;
+  }
+
+  .profile-info__meta {
+    justify-content: center;
+  }
+
+  /* ── Artwork Detail ─────────────────── */
+  .artwork-detail__title {
+    font-size: 2rem;
+  }
+
+  /* ── Upload Page ────────────────────── */
+  .upload-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  /* ── Footer ─────────────────────────── */
+  .footer__inner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+}
