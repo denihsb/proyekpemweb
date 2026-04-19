@@ -92,3 +92,5 @@ artlocal/
 3. Done! Tapi pastikan Firebase config sudah diisi dulu.
 
 > **Tips:** Untuk production, pindah ke **Firebase Hosting** biar lebih cepat & aman.
+
+setiap habis ngoding npm run build 
