@@ -6,17 +6,17 @@
 
 :root {
   --bg: #F3EFE7;
-  --surface: #EAE4D8;
-  --surface-2: #DED6C8;
-  --paper: #F9F5F0;
+  --surface: #E6E0D4;
+  --surface-2: #D8CEB6;
+  --paper: #FAF7F2;
   --text: #171512;
-  --text-soft: #3F3B35;
-  --text-muted: #756F65;
-  --accent: #D94F35;
-  --accent-dark: #A83B29;
-  --border: #C9C1B4;
-  --success: #3F7658;
-  --error: #B83A32;
+  --text-soft: #2E3A34;
+  --text-muted: #5F605A;
+  --accent: #1F4B3A;
+  --accent-dark: #143628;
+  --border: #C8C2B3;
+  --success: #496D4F;
+  --error: #B5694C;
   --shadow: 0 20px 40px rgba(23, 21, 18, 0.08);
   --radius: 18px;
   --radius-sm: 12px;
@@ -37,7 +37,7 @@ html {
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(217, 79, 53, 0.05), transparent 24%),
+    radial-gradient(circle at top left, rgba(31, 75, 58, 0.06), transparent 24%),
     linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0) 22%),
     var(--bg);
   color: var(--text);
