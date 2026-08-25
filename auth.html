@@ -84,6 +84,7 @@
         <div style="text-align:center;margin-bottom:2rem">
           <h3 style="font-size:1.3rem;margin-bottom:0.5rem;color:var(--accent)">Verifikasi Email</h3>
           <p style="font-size:0.9rem;color:var(--text-muted)">Kami sudah kirim link verifikasi ke email kamu. Buka email dan klik link untuk verifikasi akun.</p>
+          <p style="font-size:0.82rem;margin-top:0.75rem;color:var(--error)">Belum menemukan emailnya? Coba periksa folder Spam atau Junk, karena email konfirmasi bisa masuk ke sana.</p>
         </div>
         <div id="verifyInfo" style="background:rgba(255,255,255,0.05);padding:1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.9rem;color:var(--text-muted)">
           Email: <strong id="verifyEmailDisplay"></strong>
@@ -122,8 +123,11 @@ watchAuth(user => {
 window.switchTab = (tab) => {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-  document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
-  document.getElementById(`form${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+  const tabName = tab.charAt(0).toUpperCase() + tab.slice(1);
+  const tabElement = document.getElementById(`tab${tabName}`);
+  const formElement = document.getElementById(`form${tabName}`);
+  if (tabElement) tabElement.classList.add('active');
+  if (formElement) formElement.classList.add('active');
 };
 
 // Check hash
