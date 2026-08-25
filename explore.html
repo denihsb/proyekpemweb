@@ -13,7 +13,7 @@
   <div class="container nav__inner">
     <a href="index.html" class="nav__logo">ArtLocal<span class="nav__logo-dot"></span></a>
     <ul class="nav__links">
-      <li><a href="explore.html" style="color:var(--cream)">Jelajahi</a></li>
+      <li><a href="explore.html" style="color:var(--text)">Jelajahi</a></li>
     </ul>
     <div class="nav__actions">
       <a href="auth.html" class="btn btn--ghost" data-guest>Masuk</a>
@@ -48,7 +48,7 @@
       <button class="filter-btn" data-cat="other" onclick="filterBy('other')">Lainnya</button>
     </div>
 
-    <div class="search-warp">
+    <div class="search-wrap">
       <input
         type="text"
         id="searchInput"
@@ -56,11 +56,11 @@
         class="form-input"
         style="max-width:400px"
       />
-  <button onclick="clearSearch()" class="btn btn--ghost">✖</button>
+      <button onclick="clearSearch()" class="btn btn--ghost" aria-label="Clear search">✖</button>
     </div>
     <!-- Grid -->
     <div class="masonry" id="artGrid">
-      <div style="text-align:center;padding:5rem;color:var(--cream-dim);">
+      <div style="text-align:center;padding:5rem;color:var(--text-muted);">
         <span class="loader"></span>
       </div>
     </div>

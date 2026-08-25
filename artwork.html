@@ -38,7 +38,7 @@
         <a href="explore.html" class="btn btn--ghost">Jelajahi Semua →</a>
       </div>
       <div class="masonry" id="relatedGrid">
-        <div style="text-align:center;padding:2rem;color:var(--cream-dim);">
+        <div style="text-align:center;padding:2rem;color:var(--text-muted);">
           <span class="loader"></span>
         </div>
       </div>
@@ -108,7 +108,7 @@ detail.innerHTML = `
     ${artwork.tags?.length ? `
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         ${artwork.tags.map(t => `
-          <span style="padding:0.3rem 0.8rem;border:1px solid var(--border);border-radius:100px;font-size:0.75rem;color:var(--cream-dim);">
+          <span style="padding:0.3rem 0.8rem;border:1px solid var(--border);border-radius:100px;font-size:0.75rem;color:var(--text-muted);">
             #${t}
           </span>
         `).join('')}
