@@ -41,9 +41,13 @@ export function initPageTransition() {
   overlay.className = 'page-transition';
   document.body.appendChild(overlay);
 
+  const hideOverlay = () => overlay.classList.add('page-transition--out');
+
   requestAnimationFrame(() => {
-    overlay.classList.add('page-transition--out');
+    hideOverlay();
   });
+
+  window.addEventListener('pageshow', hideOverlay);
 
   document.addEventListener('click', e => {
     const link = e.target.closest('a[href]');
